@@ -1,23 +1,31 @@
+
+
 class Number:
-    def __init__(self,val):
-        self.val = val
+    def __init__(self,val, base = 10):
+        
+        self.negative = False
+        if str(val) and str(val)[0]=='-': 
+            val = str(val)[1:]
+            self.negative = True
+        self.val = str(val)
         # We should work to have val be either a string or a integer, should I make a second constructor?
+        self.base = base
+        
+        
+    def __repr__(self):
+        sign = '-' if self.negative else ''
+        return f"Number({sign+self.val}, base={self.base})"
 
 
-    
-    def convert(self,base): # assuming if they input one base its  gonna be base 10 to begin with - is that a stupid assumption?
-        # CHECK WHAT THE BASE ACTUALLy IS - IS IT POSSIBLE TO DO THAT?
-        return self.convert(10,base)
-    
-
-    def convert(self,prevBase, newBase):
+    def convert(self,newBase): # note default param
+        """
+        Converts self from prevBase (default decimal) to radix newBase"""
 
         #ASIDE TO DO LATER -- add ability to take advantage of when newBase%prevBase==0, could be some time saving
-        # def if newBase = prevBase*prevBase, same from prevBase**3
+        # def if newBase = prevBase**2, generalized to prevBase**n
 
-        # prevBase is the previous base lol, newBase is the base of the final number
-        if  (prevBase not in range(2,64) or newBase not in range(2,64)):
-            raise ValueError("You fuck faces! The functionality for this isn't built yet. Stick with bases 2 to 64 please (*/ω＼*)")
+        if  (self.base not in range(2,64) or newBase not in range(2,64)):
+            raise ValueError("You goobers! The functionality for this isn't built yet. Stick with bases 2 to 64 please (*/ω＼*)")
         
         total = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/" # length of 64, should work
         # Okay so this will be done in two parts even though this might be inneffecient
@@ -28,17 +36,19 @@ class Number:
         temp = str(self.val)
         
 
-        if prevBase == 16:
+        if self.base == 16:
             temp = str(self.val)[2:]
-        if prevBase != 10:
-            needed = total[:prevBase]
+        if self.base != 10:
+            needed = total[:self.base]
             for i in range(len(needed)): # initiates vals
                 vals[needed[i]]= i
 
 
             for i in range(len(temp)):
-                amt += vals[temp[i]] * (prevBase **(len(temp)-1-i))
-        else: amt = int(temp)
+                amt += vals[temp[i]] * (self.base **(len(temp)-1-i))
+                
+        else:  #base is 10
+            amt = 0 if temp is None else int(temp)
                 
 
         # Okay now that we have number in decimal, we generalize decToHex, which shouldn't be too bad eh
@@ -47,7 +57,7 @@ class Number:
 
         if newBase==16: 
             temporary = Number(amt)
-            return temporary.decToHex() #cheaky reuse of functionality
+            return temporary.decToHex() #cheaky reuse of functionality, not the best but whatev
         
         #Establish vals dictionary
         vals2 = dict()
@@ -69,11 +79,16 @@ class Number:
             string += arr.pop()
 
         return string # finally!
+    
+    def change_base(self, newBase):
+        """Changes self.val and self.base according to radix newBase"""
+        self.val = self.convert(newBase)
+        self.base = newBase
 
 
 
 
-    def decToHex(self):
+    def decToHex(self): #first iteration of this function
         assert type(self.val) == int
         base = 16 # base, might customize function further
 
@@ -81,7 +96,7 @@ class Number:
 
         temp = self.val # made a duplicate for some reason
 
-        string = "0X" # output string
+        string = "0x" # output string
 
         arr = []
         while(temp != 0):
@@ -93,29 +108,71 @@ class Number:
         while(len(arr)!=0):
             string += arr.pop()
 
-        return string # huzaah!
+        return string 
+    
+    def to_binary(self):
+        """Special function to help find the (signed/unsigned) binary equivalent of Number objects"""
+        bit = '1' if self.negative else '0'
+        return bit + self.convert(2)
+    
+    
+    def complement(self):
+        """Returns complement of self.val in number system w/ radix self.base"""
+        pass
+    #TODO: do this, then add, sub, etc
 
         
+    def to_ones_complement(self):
+        """Returns bitstring in form of ones complement; assumes input in base 10"""
+        if not self.negative: return self.to_binary()
+        binary = Number(abs(int(self.val))).to_binary()
+        ones_complement = ""
+        for bit in binary:
+            ones_complement += '1' if bit=='0' else '0'
+        return ones_complement
         
+        
+    def to_twos_complement(self):
+        """Returns bitstring in form of twos complement; assumes input in base 10"""
+        if not self.negative: return self.to_binary()
+        twos = list(self.to_ones_complement())
+        if all(bit=='1' for bit in twos): return '1' + ('0' * len(twos)) # for overflow
+        for i in range(len(twos)-1,-1 ,-1):
+            if twos[i]=='0':
+                twos[i] = '1'
+                break
+        return ''.join(twos)
+            
+        
+    
             
 
-"""arr= []
-for i in range(1,150):
-    num = Number(i)
-    arr.append(num.decToHex())
-print(arr)
-
-arr2 = []
-for i in range(len(arr)):
-    num = Number(arr[i])
-    arr2.append(num.convert(16,10))
-print(arr2)"""
 
 if __name__ == '__main__':
-    value = Number(3**10)
-    print(value.convert(10,3)) # huzaah!
+    # value = Number(3**10)
+    # print(value.convert(3)) # huzaah!
 
-    variable = Number('0XBEC2')
-    print(variable.convert(16,10)) # okay this works now
+    # variable = Number('0xBEC2',16)
+    # print(variable.convert(10)) # okay this works now
+    
+    # num = Number(92)
+    # print(num.val)
+    # print(num.convert(2))
+    # print(num.convert(8))
+    # print(num.convert(16))
+    
+    #num = Number("77")
+    #print(num.convert(2))
+    
+    v1 = Number(3)
+    v2 = Number(1)
+    v3 = Number(-1)
+    v4 = Number(8)
+    v5 = Number(-8)
+    for v in [v1,v2,v3,v4,v5]:
+        print(f'{v} becomes {v.to_ones_complement()} ones complement')
+        print(f'{v} becomes {v.to_twos_complement()} ones complement')
+
+    
 
 
